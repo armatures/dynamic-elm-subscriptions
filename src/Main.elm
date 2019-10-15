@@ -50,6 +50,7 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | KeyUp String
+    | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -79,6 +80,9 @@ update msg model =
             , Cmd.none
             )
 
+        NoOp ->
+            ( model, Cmd.none )
+
 
 listenForKeys url =
     String.contains "keyboard" (Url.toString url)
@@ -90,16 +94,18 @@ listenForKeys url =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    --replace this with the next line, and it works
-    if listenForKeys model.url then
-        --    if True then
-        onKeyUp
-            (Decode.field "key" Decode.string
-                |> Decode.map KeyUp
-            )
+    let
+        mapMsg =
+            if listenForKeys model.url then
+                KeyUp
 
-    else
-        Sub.none
+            else
+                always NoOp
+    in
+    onKeyUp
+        (Decode.field "key" Decode.string
+            |> Decode.map mapMsg
+        )
 
 
 
