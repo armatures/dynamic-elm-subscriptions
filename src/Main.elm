@@ -6,6 +6,7 @@ import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Decode as Decode
+import Maybe exposing (withDefault)
 import Url
 
 
@@ -32,14 +33,13 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
-    , listenToKeys : Bool
     , lastPressedKey : Maybe String
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( Model key url False Nothing, Cmd.none )
+    ( Model key url Nothing, Cmd.none )
 
 
 
@@ -68,7 +68,6 @@ update msg model =
                 newModel =
                     { model
                         | url = url
-                        , listenToKeys = String.contains "keyboard" (Url.toString url)
                     }
             in
             ( newModel
@@ -81,6 +80,10 @@ update msg model =
             )
 
 
+listenForKeys url =
+    String.contains "keyboard" (Url.toString url)
+
+
 
 -- SUBSCRIPTIONS
 
@@ -88,7 +91,7 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     --replace this with the next line, and it works
-    if model.listenToKeys then
+    if listenForKeys model.url then
         --    if True then
         onKeyUp
             (Decode.field "key" Decode.string
@@ -106,16 +109,13 @@ subscriptions model =
 view : Model -> Browser.Document Msg
 view model =
     let
+        lastPressedKey : String
         lastPressedKey =
-            case model.lastPressedKey of
-                Nothing ->
-                    []
-
-                Just key ->
-                    [ text key ]
+            model.lastPressedKey
+                |> withDefault ""
 
         listeningForKeys =
-            if model.listenToKeys then
+            if listenForKeys model.url then
                 "listening for keyUp event"
 
             else
@@ -134,8 +134,8 @@ view model =
             , viewLink "keyboard"
             ]
         , text listeningForKeys
+        , div [] [ text <| "last pressed key: " ++ lastPressedKey ]
         ]
-            ++ lastPressedKey
     }
 
 
